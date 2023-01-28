@@ -159,10 +159,10 @@ public class OmniCode extends LinearOpMode {
                 angle_c += 0.01; //increasing the angle
             }
             if (gamepad2.dpad_left == true) {
-                target_r += 1;  //turning left
+                target_r += 2;  //turning left
             }
             else if (gamepad2.dpad_right == true) {
-                target_r += 1;  //turning right
+                target_r -= 2;  //turning right
             }
             if (gamepad2.a == true) {
                 //if the button is pressed the arm will unfold and grab the preinserted cone;
@@ -242,11 +242,9 @@ public class OmniCode extends LinearOpMode {
                 }
             }
             if (state == true) {
-                state = false;
                 angle_a = - angle_a_1 + angle_a_2; 
             }
             else {
-                state = true;
                 angle_a = angle_a_1 + angle_a_2; 
             }
             
