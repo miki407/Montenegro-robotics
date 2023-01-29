@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.LED;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -26,6 +28,10 @@ public class OmniCode extends LinearOpMode {
     private DcMotor arm_3 = null;
     
     Servo   servo;
+    
+    DigitalChannel red;
+    DigitalChannel green;
+    DigitalChannel blue;
     // todo: write your code here
     @Override
     public void runOpMode() {
@@ -51,7 +57,7 @@ public class OmniCode extends LinearOpMode {
         arm_1.setDirection(DcMotor.Direction.FORWARD);
         arm_2.setDirection(DcMotor.Direction.REVERSE);
         arm_3.setDirection(DcMotor.Direction.REVERSE);
-        //reset encoders on the motors designated for aarm movment
+        //reset encoders on the motors designated for arm movment
         arm_r.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         arm_1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         arm_2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -63,6 +69,15 @@ public class OmniCode extends LinearOpMode {
         arm_3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         //map servo to the name in the config
         servo = hardwareMap.get(Servo.class, "hand");
+        //digital channels
+        red = hardwareMap.get(DigitalChannel.class, "red");
+        green = hardwareMap.get(DigitalChannel.class, "green");
+        blue = hardwareMap.get(DigitalChannel.class, "blue");
+        //set as output
+        red.setMode(DigitalChannel.Mode.OUTPUT);
+        green.setMode(DigitalChannel.Mode.OUTPUT);
+        blue.setMode(DigitalChannel.Mode.OUTPUT);
+
         
         waitForStart();
         runtime.reset();
@@ -85,9 +100,9 @@ public class OmniCode extends LinearOpMode {
         //variabele holding the current angle of the hand. Later changed by the gamepad2
         double angle_c = angle_c_nom;
         //the lenghts of the individual segments of the arm in mm
-        double a = 340;
-        double b = 350;
-        double c = 200;
+        double a = 337;
+        double b = 330;
+        double c = 190;
         //forward kinematics for the starting coordinate
         double pos_x_0 = Math.cos(angle_a_nom) * a + Math.cos(angle_b_nom) * b + Math.cos(angle_c_nom) * c;
         double pos_y_0 = Math.sin(angle_a_nom) * a + Math.sin(angle_b_nom) * b + Math.sin(angle_c_nom) * c;
@@ -108,39 +123,40 @@ public class OmniCode extends LinearOpMode {
         double time = 0;
         
         while (opModeIsActive()) {
-            //starting power 
-            double r2l1 = 0.0;
-            double r1l2 = 0.0;
-            //getting the x and y coordinate of the stick on gamepad2
-            double x = gamepad1.right_stick_x;
-            double y = -gamepad1.right_stick_y;
-            //calculating the power of the 
-            double power = Math.sqrt( Math.pow(x , 2) + Math.pow(y , 2));
-            //calculate the angle at witch we drive
-            double angle = Math.atan2(x,y);
-            //add a constant 45 degree angle because the power vector of the wheels are 45 degress of phase
-            double angle_rel = 0.785 + angle;
-            //calculate the power of individual motor pairs
-            r2l1 = Math.sin(angle_rel) * power;
-            r1l2 = Math.cos(angle_rel) * power;
-            //set the power of the motors
-            left1.setPower(r2l1);
-            right1.setPower(r1l2);
-            left2.setPower(r1l2);
-            right2.setPower(r2l1);
-            //run if the trigger is pressed
-            while (gamepad1.left_trigger > 0.5) {
+            if (gamepad1.left_trigger > 0.5) {
             //code responsible for rotaation
-            double rotation = gamepad1.left_stick_x;
+                double power = gamepad1.left_stick_x;
             
-            power = Range.clip(rotation, -1, 1);
-            left1.setPower(power);
-            right1.setPower(-power);
-            left2.setPower(power);
-            right2.setPower(-power);
+                left1.setPower(power);
+                right1.setPower(-power);
+                left2.setPower(power);
+                right2.setPower(-power);
             
             }
-            
+            else {
+                //starting power 
+                double r2l1 = 0.0;
+                double r1l2 = 0.0;
+                //getting the x and y coordinate of the stick on gamepad2
+                double x = gamepad1.right_stick_x;
+                double y = -gamepad1.right_stick_y;
+                //calculating the power of the 
+                double power = Math.sqrt( Math.pow(x , 2) + Math.pow(y , 2));
+                //calculate the angle at witch we drive
+                double angle = Math.atan2(x,y);
+                //add a constant 45 degree angle because the power vector of the wheels are 45 degress of phase
+                double angle_rel = 0.785 + angle;
+                //calculate the power of individual motor pairs
+                r2l1 = Math.sin(angle_rel) * power;
+                r1l2 = Math.cos(angle_rel) * power;
+                //set the power of the motors
+                left1.setPower(r2l1);
+                right1.setPower(r1l2);
+                left2.setPower(r1l2);
+                right2.setPower(r2l1);
+                //run if the trigger is pressed
+
+            }
             
             
             //ARM CODE
@@ -255,6 +271,7 @@ public class OmniCode extends LinearOpMode {
             double pos_y_b = pos_y_1 - pos_y_2;
             
             double angle_b = Math.atan2(pos_y_b, pos_x_b);
+            
 //-------------------------------------------------------------------------------------------------------------
             //angle pre processing
             //In case NaN value is calculated use previous correct value insted
@@ -262,6 +279,20 @@ public class OmniCode extends LinearOpMode {
                 angle_a = angle_a_old;
                 angle_b = angle_b_old;
                 angle_c = angle_c_old;
+                blue.setState(true);
+            }
+            else {
+                blue.setState(true);
+            }
+            //in case There is a intersection between 2 segments
+            if (((angle_a - angle_a_nom) < (Math.PI/5) && (angle_a - angle_a_nom) > (-Math.PI/5)) || ((Math.PI - angle_a + angle_b - angle_b_offset) < (Math.PI/5) && (Math.PI - angle_a + angle_b - angle_b_offset) > (-Math.PI/5)) || ((Math.PI - angle_b + angle_c - angle_c_offset) < (Math.PI/3) && (Math.PI - angle_b + angle_c - angle_c_offset) > (Math.PI/3))){
+                angle_a = angle_a_old;
+                angle_b = angle_b_old;
+                angle_c = angle_c_old;
+                red.setState(true);
+            }
+            else {
+                red.setState(false);
             }
             
             //calculating angle diffrence
@@ -328,7 +359,7 @@ public class OmniCode extends LinearOpMode {
             angle_c_old = angle_c;
             
 //----------------------------------------------------------------------------------------------------------------        
-            
+
             //convert angle to encoder position
             target_a = (int)(count_per_rad * (angle_a - angle_a_nom));
             target_b = (int)(count_per_rad * (Math.PI - angle_a + angle_b - angle_b_offset));
