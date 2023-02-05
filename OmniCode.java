@@ -81,22 +81,18 @@ public class OmniCode extends LinearOpMode {
         
         waitForStart();
         runtime.reset();
-        //variables dedicated to holding the target position for encoders dedicated to movment
-        int left1_target = 0;
-        int right1_target = 0;
-        int left2_target = 0;
-        int right2_target = 0;
+ 
         //varibales dedicated to holding the target position for encoderss dedicated to the arm
         int target_a = 0;
         int target_b = 0;
         int target_c = 0;
         int target_r = 0;
         //the number of encoder counts per rad for the gear ration on the arm
-        double count_per_rad = 472.5;
+        double count_per_rad = 372.5;
         //staarting angle of each joint compared to the ground
         double angle_a_nom = Math.PI/2;
         double angle_b_nom = Math.PI/2;
-        double angle_c_nom = 0;
+        double angle_c_nom = Math.PI;
         //variabele holding the current angle of the hand. Later changed by the gamepad2
         double angle_c = angle_c_nom;
         //the lenghts of the individual segments of the arm in mm
@@ -104,14 +100,17 @@ public class OmniCode extends LinearOpMode {
         double b = 330;
         double c = 190;
         //forward kinematics for the starting coordinate
-        double pos_x_0 = Math.cos(angle_a_nom) * a + Math.cos(angle_b_nom) * b + Math.cos(angle_c_nom) * c;
-        double pos_y_0 = Math.sin(angle_a_nom) * a + Math.sin(angle_b_nom) * b + Math.sin(angle_c_nom) * c;
+        double pos_x_0_target = Math.cos(angle_a_nom) * a + Math.cos(angle_b_nom) * b + Math.cos(angle_c_nom) * c;
+        double pos_y_0_target = Math.sin(angle_a_nom) * a + Math.sin(angle_b_nom) * b + Math.sin(angle_c_nom) * c;
+        //adition variable needed for interpolation
+        double pos_x_0 = pos_x_0_target;
+        double pos_y_0 = pos_y_0_target;
         //variabele used to run a specific code once
         int one_time_run = 0;
         //angles compared to the previous arm segmet. In the case of the first arm segment comparted to the ground
         double angle_a_offset = Math.PI/2;
         double angle_b_offset = Math.PI;
-        double angle_c_offset = Math.PI/2;
+        double angle_c_offset = Math.PI*1.5;
         //variables storing the previous angle value for angle correction
         double angle_a_old = angle_a_nom;
         double angle_b_old = angle_b_nom;
@@ -120,11 +119,17 @@ public class OmniCode extends LinearOpMode {
         boolean trigger = false;
         //variable to decide witch solution of the inverse kinematics to use
         boolean state = true;
+        boolean interp_state_x = false;
+        boolean interp_state_y = false;
         double time = 0;
+        //take gamepad input on interval
+        double input_time = 0;
         
         while (opModeIsActive()) {
+            
             if (gamepad1.left_trigger > 0.5) {
             //code responsible for rotaation
+
                 double power = gamepad1.left_stick_x;
             
                 left1.setPower(power);
@@ -134,6 +139,7 @@ public class OmniCode extends LinearOpMode {
             
             }
             else {
+
                 //starting power 
                 double r2l1 = 0.0;
                 double r1l2 = 0.0;
@@ -162,18 +168,15 @@ public class OmniCode extends LinearOpMode {
             //ARM CODE
             //---------------------------------------------------------------------------------------------------
             //ARM CODE
-            
+            if ((runtime.milliseconds() - input_time) > 10) {
+                input_time = runtime.milliseconds();
             
             //every time this code runs the value of the final x and y coordinate ae updated depending on the position of the right stick
             pos_x_0 -= gamepad2.right_stick_x * 5;
             pos_y_0 -= gamepad2.right_stick_y * 5;
             //d pad buttons control the angle of the last joint(angle_c) and the target position for the rotatipn eof the base
-            if (gamepad2.dpad_down == true) {
-                angle_c -= 0.01; //decreasing the nagle
-            }
-            else if (gamepad2.dpad_up == true) {
-                angle_c += 0.01; //increasing the angle
-            }
+            angle_c -= gamepad2.left_stick_y * 0.05; //decreasing the nagle
+            
             if (gamepad2.dpad_left == true) {
                 target_r += 2;  //turning left
             }
@@ -227,6 +230,41 @@ public class OmniCode extends LinearOpMode {
                 arm_3.setPower(1);
                  
             }
+            if (gamepad2.left_bumper == true) {
+                pos_x_0_target = -189;
+                pos_y_0_target = 663;
+                angle_c = Math.PI;
+                interp_state_x = true;
+                interp_state_y = true;
+            }
+            if (gamepad2.dpad_down == true) {
+                target_r = 0;
+                arm_r.setTargetPosition(target_r);
+                arm_r.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                arm_r.setPower(1);
+                while(arm_r.isBusy()) {
+                    //do nothing
+                }
+                pos_x_0_target = -183;
+                pos_y_0_target = 563;
+                angle_c = Math.PI;
+                interp_state_x = true;
+                interp_state_y = true;                
+            }
+            if (gamepad2.right_bumper == true) {
+                target_r = -(int)(count_per_rad * Math.PI/2);
+                arm_r.setTargetPosition(target_r);
+                arm_r.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                arm_r.setPower(1);    
+                while(arm_r.isBusy()) {
+                    //do nothing
+                }
+                pos_x_0_target = -796;
+                pos_y_0_target = -254;
+                angle_c = Math.PI;
+                interp_state_x = true;
+                interp_state_y = true;                
+            }
             
             //controls the grabber so that it doesnt relese the preloaded cone until a input is given
             
@@ -235,6 +273,45 @@ public class OmniCode extends LinearOpMode {
                 servo.setPosition(servo_power);
                 trigger = true;
             }
+            //deciding inverse kinematics solution
+            if (gamepad2.b == true && (runtime.seconds() - time) > 1){
+                time = runtime.seconds();
+                if (state == true) {
+                    state = false;
+                }
+                else {
+                    state = true;
+                }
+            }
+        }
+            //Interpolation for inverse kinematics
+            
+            double interp_x = 4;
+            double interp_y = 4;
+            
+            
+            if (((pos_x_0 - pos_x_0_target) <= interp_x) && interp_state_x == true && ((pos_x_0 - pos_x_0_target) < 0)) {
+                pos_x_0 += interp_x;    
+            } 
+            else if (((pos_x_0 - pos_x_0_target) >= interp_x)  && interp_state_x == true && ((pos_x_0 - pos_x_0_target) > 0)) {
+                pos_x_0 -= interp_x;
+            }
+            else if (interp_state_x == true){
+                pos_x_0 = pos_x_0_target;
+                interp_state_x = false;
+            }
+            
+            if (((pos_y_0 - pos_y_0_target) <= interp_y)  && interp_state_y == true && ((pos_y_0 - pos_y_0_target) < 0)) {
+                pos_y_0 += interp_y;    
+            } 
+            else if (((pos_y_0 - pos_y_0_target) >= interp_y)  && interp_state_y == true && ((pos_y_0 - pos_y_0_target) > 0)) {
+                pos_y_0 -= interp_y;
+            }
+            else if (interp_state_y == true){
+                pos_y_0 = pos_y_0_target;
+                 interp_state_y = false;
+            }
+            
             
             //INVERSE KINEMATICS
             
@@ -248,15 +325,7 @@ public class OmniCode extends LinearOpMode {
             
             double angle_a = angle_a_nom;
             //deciding the solution
-            if (gamepad2.b == true && (runtime.seconds() - time) > 1){
-                time = runtime.seconds();
-                if (state == true) {
-                    state = false;
-                }
-                else {
-                    state = true;
-                }
-            }
+
             if (state == true) {
                 angle_a = - angle_a_1 + angle_a_2; 
             }
@@ -284,8 +353,8 @@ public class OmniCode extends LinearOpMode {
             else {
                 blue.setState(true);
             }
-            //in case There is a intersection between 2 segments
-            if (((angle_a - angle_a_nom) < (Math.PI/5) && (angle_a - angle_a_nom) > (-Math.PI/5)) || ((Math.PI - angle_a + angle_b - angle_b_offset) < (Math.PI/5) && (Math.PI - angle_a + angle_b - angle_b_offset) > (-Math.PI/5)) || ((Math.PI - angle_b + angle_c - angle_c_offset) < (Math.PI/3) && (Math.PI - angle_b + angle_c - angle_c_offset) > (Math.PI/3))){
+            /* //in case There is a intersection between 2 segments
+            if ((angle_a < (Math.PI/5) && angle_a > (-Math.PI/5)) || ((Math.PI - angle_a + angle_b) < (Math.PI/5) && (Math.PI - angle_a + angle_b) > (-Math.PI/5)) || ((Math.PI - angle_b + angle_c) < (Math.PI/3) && (Math.PI - angle_b + angle_c) > (Math.PI/3))){
                 angle_a = angle_a_old;
                 angle_b = angle_b_old;
                 angle_c = angle_c_old;
@@ -293,7 +362,7 @@ public class OmniCode extends LinearOpMode {
             }
             else {
                 red.setState(false);
-            }
+            } */
             
             //calculating angle diffrence
             double angle_a_delta1 = Math.abs(angle_a - angle_a_old);
@@ -364,7 +433,14 @@ public class OmniCode extends LinearOpMode {
             target_a = (int)(count_per_rad * (angle_a - angle_a_nom));
             target_b = (int)(count_per_rad * (Math.PI - angle_a + angle_b - angle_b_offset));
             target_c = (int)(count_per_rad * (Math.PI - angle_b + angle_c - angle_c_offset));
-             
+            
+            
+            /*
+            //angle test for count per rad
+            target_c = (int)(count_per_rad * angle_c);
+            */
+            
+            
             //set target position
             arm_1.setTargetPosition(target_a);
             arm_2.setTargetPosition(target_b);
@@ -392,10 +468,12 @@ public class OmniCode extends LinearOpMode {
             telemetry.update();
             
             //wait
-            sleep(10);
+            //sleep(10);
             
         }
     }
-    
 }
+    
+    
+    
 
