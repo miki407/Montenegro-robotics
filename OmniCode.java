@@ -463,7 +463,7 @@ public class OmniCode extends LinearOpMode {
             telemetry.addData("Position:", "\n X = " + pos_x_0 + "\n Y = " + pos_y_0);
             telemetry.addData("Forward:", "\n X = " + (Math.cos(angle_a) * a + Math.cos(angle_b) * b + Math.cos(angle_c) * c) + "\n Y = " + (Math.sin(angle_a) * a + Math.sin(angle_b) * b + Math.sin(angle_c) * c));
             telemetry.addData("Angles", "\n Angle_c = " + Math.toDegrees(angle_c) + "\n Angle_b = " + Math.toDegrees(angle_b) + "\n Angle_a = " + Math.toDegrees(angle_a));
-            telemetry.addData("Encoder", arm_1.getCurrentPosition() + " " + arm_2.getCurrentPosition() + " " + arm_3.getCurrentPosition());
+            telemetry.addData("Encoder", arm_1.getCurrentPosition() + " " + arm_2.getCurrentPosition() + " " + arm_3.getCurrentPosition() + " " + arm_r.getCurrentPosition());
             telemetry.addData("Targets", target_a + " " + target_b + " " + target_c);
             telemetry.update();
             

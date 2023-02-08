@@ -78,7 +78,7 @@ public class Autonomno extends LinearOpMode {
         arm_2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         arm_3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         //set motors to run using encoders 
-        arm_r.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        arm_r.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         arm_1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         arm_2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         arm_3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -146,42 +146,106 @@ public class Autonomno extends LinearOpMode {
         double distance = 39;
         boolean relese_q1 = false;
         boolean relese_q2 = false;
+        boolean ready_a = false;
+        double integral_error_left1 = 0;
+        double integral_error_left2 = 0;
+        double integral_error_right1 = 0;
+        double integral_error_right2 = 0;
+        double integral_error_r = 0;
+        int error_r = 0;
+        int error_left1 = 0;
+        int error_left2 = 0;
+        int error_right1 = 0;
+        int error_right2 = 0;
+        boolean ready_l1 = false;
+        boolean ready_l2 = false;
+        boolean ready_r1 = false;
+        boolean ready_r2 = false;
+        boolean ready_r = false;
+        boolean ready_kinematics = false;
+        char direction = 'y';
+        double count_per_cm = 12;
+        int target_l1 = (int)(count_per_cm * distance);;
+        int target_l2 = (int)(count_per_cm * distance);;
+        int target_r1 = (int)(count_per_cm * distance);;
+        int target_r2 = (int)(count_per_cm * distance);;
+        
         if (opModeIsActive()) {
             input_time = runtime.seconds();    
             while (opModeIsActive()) {
-                double step_per_cm = 12;
 
-                double integral_error_left1 = 0;
-                double integral_error_left2 = 0;
-                double integral_error_right1 = 0;
-                double integral_error_right2 = 0;
-                double[] resoult = new double[2];
-                resoult = PID_control(step_per_cm,distance,0,time,integral_error_left1,left1.getCurrentPosition());
+                double[] resoult = new double[3];
+                resoult = PID_control(target_l1,time,integral_error_left1,left1.getCurrentPosition(),error_left1);
                 left1.setPower(resoult[1]);
                 integral_error_left1 = resoult[0];
-                telemetry.addData("PIDl1", resoult[1]);
+                error_left1 = (int)resoult[2];
+                //telemetry.addData("PIDl1", resoult[1] + "   " + error_left1 + "   " + left1.getCurrentPosition());
+                if (Math.abs(error_left1) < 5) {
+                     ready_l1 = true;
+                }
+                else {
+                     ready_l1 = false;
+                }
                 
-                resoult = PID_control(step_per_cm,distance,0,time,integral_error_left2,left2.getCurrentPosition());
-                left2.setPower(resoult[1]);
-                integral_error_left2 = resoult[0];
-                telemetry.addData("PIDl2", resoult[1]);
-                
-                resoult = PID_control(step_per_cm,distance,0,time,integral_error_right1,right1.getCurrentPosition());
+                resoult = PID_control(target_r1,time,integral_error_right1,right1.getCurrentPosition(),error_right1);
                 right1.setPower(resoult[1]);
                 integral_error_right1 = resoult[0];
-                telemetry.addData("PIDr1", resoult[1]);
+                error_right1 = (int)resoult[2];
+                //telemetry.addData("PIDr1", resoult[1] + "   " + error_right1  + "   " + right1.getCurrentPosition());
+                if (Math.abs(error_right1) < 5) {
+                     ready_r1 = true;
+                }
+                else {
+                     ready_r1 = false;
+                }
                 
-                resoult = PID_control(step_per_cm,distance,0,time,integral_error_right2,right2.getCurrentPosition());
+                resoult = PID_control(target_r2,time,integral_error_right2,right2.getCurrentPosition(),error_right2);
                 right2.setPower(resoult[1]);
                 integral_error_right2 = resoult[0];
+                error_right2 = (int)resoult[2];
+                //telemetry.addData("PIDr2", resoult[1] + "   " + error_right2  + "   " + right2.getCurrentPosition());
+                if (Math.abs(error_right2) < 5) {
+                     ready_r2 = true;
+                }
+                else {
+                     ready_r2 = false;
+                }
+                
+                resoult = PID_control(target_l2,time,integral_error_left2,left2.getCurrentPosition(),error_left2);
+                left2.setPower(resoult[1]);
+                integral_error_left2 = resoult[0];
+                error_left2 = (int)resoult[2];
+                //telemetry.addData("PIDl2", resoult[1] + "   " + error_left2  + "   " + left2.getCurrentPosition());
+                if (Math.abs(error_left2) < 5) {
+                     ready_l2 = true;
+                }
+                else {
+                     ready_l2 = false;
+                }
+                
+                resoult = PID_control(target_r,time,integral_error_r,arm_r.getCurrentPosition(),error_r);
+                arm_r.setPower(resoult[1]);
+                integral_error_r = resoult[0];
+                error_r = (int)resoult[2];
+                //telemetry.addData("PID_R", resoult[1] + "   " + error_r  + "   " + arm_r.getCurrentPosition());
+                if (Math.abs(error_r) < 2) {
+                     ready_r = true;
+                }
+                else {
+                     ready_r = false;
+                }
                 
                 time = runtime.milliseconds();
                 
-                
-                telemetry.addData("PIDr2", resoult[1]);
-                telemetry.update();
-                sleep(1);
-                if ((runtime.seconds() - input_time) > 1.5 && steps == 0) {
+                 if (steps == 0 ) {
+                    steps = 1;
+                    
+                    servo.setPosition(0.75);
+                    arm_1.setTargetPosition(1000); //be upstraight
+                    arm_1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    arm_1.setPower(1);
+                 }
+                else if (ready_l1 && ready_l2 && ready_r1 && ready_r2 && steps == 1) {
                     for (int n = 0; n < 10; n++) {
                         cone_color[0] += color.red();
                         cone_color[1] += color.green();
@@ -191,82 +255,110 @@ public class Autonomno extends LinearOpMode {
                     cone_color[0] = cone_color[0] / 10;
                     cone_color[1] = cone_color[1] / 10;
                     cone_color[2] = cone_color[2] / 10;
-                    steps = 1;
+                    steps = 2;
                     telemetry.addData("RGB:", cone_color[0] + "," + cone_color[1] + "," + cone_color[2]);
                     telemetry.update();
                     read = true;
                     //step2
-                    distance += 75;
+                    distance += 85;
+                    target_l1 = (int)(count_per_cm * distance);
+                    target_l2 = (int)(count_per_cm * distance);
+                    target_r1 = (int)(count_per_cm * distance);
+                    target_r2 = (int)(count_per_cm * distance);
                     
                 }
-                if (steps == 1) {
-                    steps = 2;
-                    
-                    servo.setPosition(0.75);
-                    arm_1.setTargetPosition(1000); //be upstraight
-                    arm_1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    arm_1.setPower(1);
-                    while(arm_1.isBusy()) {
-                        
-                    }
-                    
+                else if (steps == 2 && arm_1.isBusy() == false) {
+                    steps = 3;
                     arm_1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                     arm_1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     
                     arm_1.setTargetPosition(0);
                     arm_1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     arm_1.setPower(1);
-                    
+                }
+                else if (steps == 3 ) {
+                    steps = 4;
                     arm_2.setTargetPosition(-1010); //be upstraight
                     arm_2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     arm_2.setPower(1);
-                    while(arm_2.isBusy()) {
-                        
-                    }
-                    
+                    arm_3.setTargetPosition(1400); //be upstraight
+                    arm_3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    arm_3.setPower(1);
+                }
+                else if (steps == 4 && arm_2.isBusy() == false) {
+                    steps = 5;
                     arm_2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                     arm_2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     
                     arm_2.setTargetPosition(0);
                     arm_2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     arm_2.setPower(1);
-                    
-                    
-                    arm_3.setTargetPosition(1400); //be upstraight
-                    arm_3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    arm_3.setPower(1);
-                    while(arm_3.isBusy()) {
-                    }
-                    
+                 }
+                else if (steps == 5 && arm_3.isBusy() == false) {
+                    steps = 6;
                     arm_3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                     arm_3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     
                     arm_3.setTargetPosition(0);
                     arm_3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     arm_3.setPower(1);
-                    
-                    input_time = runtime.seconds();
+                    ready_a = true;
                 }
-                
-                if (steps == 2 && (runtime.seconds() - input_time) > 2) {
-                    steps = 3;
-                    target_r = -150;
-                    arm_r.setTargetPosition(target_r);
-                    arm_r.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    arm_r.setPower(1);
-                    while(arm_r.isBusy()) {
-                        //do nothing
-                    }
-                    pos_x_0_target = -410;
-                    pos_y_0_target = 605;
-                    angle_c = Math.PI - 0.5;
+                else if (steps == 6) {
+                    steps = 7;
+                    target_r = -225;
+
+                    ready_r = false;
+                }
+                else if (steps == 7 && ready_r) {
+                    steps = 8;
+                    pos_x_0_target = -256;
+                    pos_y_0_target = 600;
+                    angle_c = Math.PI - 0.4;
                     interp_state_x = true;
                     interp_state_y = true;
+                    ready_kinematics = true;
                 }
-                if (relese_q1 && relese_q2) {
-                    sleep(100);
+                else if (steps == 8 && relese_q1 && relese_q2 && (runtime.seconds() - input_time) > 1.5) {
+                    steps = 9;
                     servo.setPosition(0.25);
+                    sleep(500);
+                    servo.setPosition(0.5);
+                    
                 }
+                else if(steps == 9) {
+                    steps = 10;
+                    if (cone_color[0] > cone_color[1] && cone_color[0] > cone_color[2]) {
+                        //red  
+                        target_l1 = (int)(count_per_cm * (distance-70));
+                        target_l2 = (int)(count_per_cm * (distance+70));
+                        target_r1 = (int)(count_per_cm * (distance+70));
+                        target_r2 = (int)(count_per_cm * (distance-70));
+        
+                    }
+                    else if (cone_color[1] > cone_color[0] && cone_color[1] > cone_color[2]) {
+                        //green
+                        //do nothing
+                    }
+                    else if (cone_color[2] > cone_color[0] && cone_color[2] > cone_color[1]) {
+                        //blue
+                        target_l1 = (int)(count_per_cm * (distance+70));
+                        target_l2 = (int)(count_per_cm * (distance-70));
+                        target_r1 = (int)(count_per_cm * (distance-70));
+                        target_r2 = (int)(count_per_cm * (distance+70));
+
+                    }
+                }
+                else if (steps == 10) {
+                    pos_x_0_target = Math.cos(angle_a_nom) * a + Math.cos(angle_b_nom) * b + Math.cos(angle_c_nom) * c;
+                    pos_y_0_target = Math.sin(angle_a_nom) * a + Math.sin(angle_b_nom) * b + Math.sin(angle_c_nom) * c;
+                    angle_c = Math.PI;
+                    interp_state_x = true;
+                    interp_state_y = true;
+                    target_r = 0;
+                }
+                    
+                if (ready_kinematics) {    
                 
                 double interp_x = 4;
                 double interp_y = 4;
@@ -282,6 +374,7 @@ public class Autonomno extends LinearOpMode {
                     pos_x_0 = pos_x_0_target;
                     interp_state_x = false;
                     relese_q1 = true;
+                    input_time = runtime.seconds();
                 }
                 
                 if (((pos_y_0 - pos_y_0_target) <= interp_y)  && interp_state_y == true && ((pos_y_0 - pos_y_0_target) < 0)) {
@@ -294,6 +387,7 @@ public class Autonomno extends LinearOpMode {
                     pos_y_0 = pos_y_0_target;
                      interp_state_y = false;
                      relese_q2 = true;
+                     input_time = runtime.seconds();
                 }
                   
                 double pos_x_1 = pos_x_0 - Math.cos(angle_c) * c;
@@ -416,17 +510,11 @@ public class Autonomno extends LinearOpMode {
                 target_c = (int)(count_per_rad * (Math.PI - angle_b + angle_c - angle_c_offset));
                 
                 
-                /*
-                //angle test for count per rad
-                target_c = (int)(count_per_rad * angle_c);
-                */
-                
-                
                 //set target position
                 arm_1.setTargetPosition(target_a);
                 arm_2.setTargetPosition(target_b);
                 arm_3.setTargetPosition(target_c);
-                arm_r.setTargetPosition(target_r);
+                //arm_r.setTargetPosition(target_r);
                 //run this code one time
                 if (one_time_run == 0) {
                 one_time_run = 1;
@@ -436,49 +524,42 @@ public class Autonomno extends LinearOpMode {
                 arm_2.setPower(1);
                 arm_3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 arm_3.setPower(1);
-                arm_r.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                arm_r.setPower(1);
+                //arm_r.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                //arm_r.setPower(1);
                 }
-                telemetry.addData("Status", "Run Time: " + runtime.toString());
+           /*     telemetry.addData("Status", "Run Time: " + runtime.toString());
                 telemetry.addData("Position:", "\n X = " + pos_x_0 + "\n Y = " + pos_y_0);
                 telemetry.addData("Forward:", "\n X = " + (Math.cos(angle_a) * a + Math.cos(angle_b) * b + Math.cos(angle_c) * c) + "\n Y = " + (Math.sin(angle_a) * a + Math.sin(angle_b) * b + Math.sin(angle_c) * c));
                 telemetry.addData("Angles", "\n Angle_c = " + Math.toDegrees(angle_c) + "\n Angle_b = " + Math.toDegrees(angle_b) + "\n Angle_a = " + Math.toDegrees(angle_a));
                 telemetry.addData("Encoder", arm_1.getCurrentPosition() + " " + arm_2.getCurrentPosition() + " " + arm_3.getCurrentPosition() + " " + arm_r.getCurrentPosition());
                 telemetry.addData("Targets", target_a + " " + target_b + " " + target_c);
                 telemetry.update();
-        
+            */        
             
-                if (cone_color[0] > cone_color[1] && cone_color[0] > cone_color[2]) {
-                    
-                }
-                else if (cone_color[1] > cone_color[0] && cone_color[1] > cone_color[2]) {
-                    
-                }
-                else if (cone_color[2] > cone_color[0] && cone_color[2] > cone_color[1]) {
-                    
-                }
+
                 
                 
             }
+             }
         }
     }
     
-    public double[] PID_control (double count_per_cm, double distance, double time_out, double current_time, double integral_error,int current_count) {
+     public double[] PID_control (int target, double current_time, double integral_error,int current_count, int error_old) {
     
-    double kp = 0.01;
-    double ki = 0.000006;
-    double kd = 0.000003;
+    double kp = 0.045;
+    double ki = 0.00000005;
+    double kd = 0.00016;
     
-    int target = (int)(count_per_cm * distance);
+    
     int error = target - current_count;
     integral_error += error * (runtime.milliseconds() - current_time);
-    double derivative_error = error / (runtime.milliseconds() - current_time);
+    double derivative_error = (error_old - error) / (runtime.milliseconds() - current_time);
     double power = kp * error + ki * integral_error + kd * derivative_error;
-    double[] resoult = new double[2];
+    double[] resoult = new double[3];
     resoult[0] = integral_error;
     resoult[1] = power;
+    resoult[2] = error;
     return resoult;
-    
     
     
 }
