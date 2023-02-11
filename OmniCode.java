@@ -130,7 +130,7 @@ public class OmniCode extends LinearOpMode {
             if (gamepad1.left_trigger > 0.5) {
             //code responsible for rotaation
 
-                double power = gamepad1.left_stick_x;
+                double power = gamepad1.left_stick_x * 0.5;
             
                 left1.setPower(power);
                 right1.setPower(-power);
@@ -144,8 +144,8 @@ public class OmniCode extends LinearOpMode {
                 double r2l1 = 0.0;
                 double r1l2 = 0.0;
                 //getting the x and y coordinate of the stick on gamepad2
-                double x = gamepad1.right_stick_x;
-                double y = -gamepad1.right_stick_y;
+                double x = -gamepad1.right_stick_x;
+                double y = gamepad1.right_stick_y;
                 //calculating the power of the 
                 double power = Math.sqrt( Math.pow(x , 2) + Math.pow(y , 2));
                 //calculate the angle at witch we drive
@@ -176,13 +176,8 @@ public class OmniCode extends LinearOpMode {
             pos_y_0 -= gamepad2.right_stick_y * 5;
             //d pad buttons control the angle of the last joint(angle_c) and the target position for the rotatipn eof the base
             angle_c -= gamepad2.left_stick_y * 0.05; //decreasing the nagle
-            
-            if (gamepad2.dpad_left == true) {
-                target_r += 2;  //turning left
-            }
-            else if (gamepad2.dpad_right == true) {
-                target_r -= 2;  //turning right
-            }
+            target_r += (int)(gamepad2.left_stick_x * 4);
+
             if (gamepad2.a == true) {
                 //if the button is pressed the arm will unfold and grab the preinserted cone;
                 
@@ -245,22 +240,22 @@ public class OmniCode extends LinearOpMode {
                 while(arm_r.isBusy()) {
                     //do nothing
                 }
-                pos_x_0_target = -183;
-                pos_y_0_target = 563;
+                pos_x_0_target = -220;
+                pos_y_0_target = 580;
                 angle_c = Math.PI;
                 interp_state_x = true;
                 interp_state_y = true;                
             }
-            if (gamepad2.right_bumper == true) {
-                target_r = -(int)(count_per_rad * Math.PI/2);
+            if (gamepad2.dpad_up == true) {
+                target_r = 0;
                 arm_r.setTargetPosition(target_r);
                 arm_r.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 arm_r.setPower(1);    
                 while(arm_r.isBusy()) {
                     //do nothing
                 }
-                pos_x_0_target = -796;
-                pos_y_0_target = -254;
+                pos_x_0_target = -600;
+                pos_y_0_target = -280;
                 angle_c = Math.PI;
                 interp_state_x = true;
                 interp_state_y = true;                

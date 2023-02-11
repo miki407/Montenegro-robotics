@@ -79,9 +79,9 @@ public class Autonomno extends LinearOpMode {
         arm_3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         //set motors to run using encoders 
         arm_r.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        arm_1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        arm_2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        arm_3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        arm_1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        arm_2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        arm_3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         //map servo to the name in the config
         servo = hardwareMap.get(Servo.class, "hand");
         //digital channels
@@ -146,13 +146,18 @@ public class Autonomno extends LinearOpMode {
         double distance = 39;
         boolean relese_q1 = false;
         boolean relese_q2 = false;
-        boolean ready_a = false;
         double integral_error_left1 = 0;
         double integral_error_left2 = 0;
         double integral_error_right1 = 0;
         double integral_error_right2 = 0;
         double integral_error_r = 0;
+        double integral_error_a = 0;
+        double integral_error_b = 0;
+        double integral_error_c = 0;
         int error_r = 0;
+        int error_a = 0;
+        int error_b = 0;
+        int error_c = 0;
         int error_left1 = 0;
         int error_left2 = 0;
         int error_right1 = 0;
@@ -162,32 +167,43 @@ public class Autonomno extends LinearOpMode {
         boolean ready_r1 = false;
         boolean ready_r2 = false;
         boolean ready_r = false;
+        boolean ready_a = false;
+        boolean ready_b = false;
+        boolean ready_c = false;
+        int target_a_unfold = 0;
+        int target_b_unfold = 0;
+        int target_c_unfold = 0;
         boolean ready_kinematics = false;
-        char direction = 'y';
         double count_per_cm = 12;
         int target_l1 = (int)(count_per_cm * distance);;
         int target_l2 = (int)(count_per_cm * distance);;
         int target_r1 = (int)(count_per_cm * distance);;
         int target_r2 = (int)(count_per_cm * distance);;
-        
+        double[] resoult = new double[3];
+        double kp = 0.045;
+        double ki = 0.00000005;
+        double kd = 0.00016;
+        double kp_arm = 0.031;
+        double ki_arm = 0.00000003;
+        double kd_arm = 0;
+                        
         if (opModeIsActive()) {
             input_time = runtime.seconds();    
             while (opModeIsActive()) {
 
-                double[] resoult = new double[3];
-                resoult = PID_control(target_l1,time,integral_error_left1,left1.getCurrentPosition(),error_left1);
-                left1.setPower(resoult[1]);
-                integral_error_left1 = resoult[0];
-                error_left1 = (int)resoult[2];
-                //telemetry.addData("PIDl1", resoult[1] + "   " + error_left1 + "   " + left1.getCurrentPosition());
-                if (Math.abs(error_left1) < 5) {
-                     ready_l1 = true;
+                resoult = PID_control(target_l2,time,integral_error_left2,left2.getCurrentPosition(),error_left2,kp,ki,kd);
+                left2.setPower(resoult[1]);
+                integral_error_left2 = resoult[0];
+                error_left2 = (int)resoult[2];
+                //telemetry.addData("PIDl2", resoult[1] + "   " + error_left2  + "   " + left2.getCurrentPosition());
+                if (Math.abs(error_left2) < 5) {
+                     ready_l2 = true;
                 }
                 else {
-                     ready_l1 = false;
+                     ready_l2 = false;
                 }
-                
-                resoult = PID_control(target_r1,time,integral_error_right1,right1.getCurrentPosition(),error_right1);
+
+                resoult = PID_control(target_r1,time,integral_error_right1,right1.getCurrentPosition(),error_right1,kp,ki,kd);
                 right1.setPower(resoult[1]);
                 integral_error_right1 = resoult[0];
                 error_right1 = (int)resoult[2];
@@ -199,7 +215,7 @@ public class Autonomno extends LinearOpMode {
                      ready_r1 = false;
                 }
                 
-                resoult = PID_control(target_r2,time,integral_error_right2,right2.getCurrentPosition(),error_right2);
+                resoult = PID_control(target_r2,time,integral_error_right2,right2.getCurrentPosition(),error_right2,kp,ki,kd);
                 right2.setPower(resoult[1]);
                 integral_error_right2 = resoult[0];
                 error_right2 = (int)resoult[2];
@@ -211,19 +227,21 @@ public class Autonomno extends LinearOpMode {
                      ready_r2 = false;
                 }
                 
-                resoult = PID_control(target_l2,time,integral_error_left2,left2.getCurrentPosition(),error_left2);
-                left2.setPower(resoult[1]);
-                integral_error_left2 = resoult[0];
-                error_left2 = (int)resoult[2];
-                //telemetry.addData("PIDl2", resoult[1] + "   " + error_left2  + "   " + left2.getCurrentPosition());
-                if (Math.abs(error_left2) < 5) {
-                     ready_l2 = true;
+                resoult = PID_control(target_l1,time,integral_error_left1,left1.getCurrentPosition(),error_left1,kp,ki,kd);
+                left1.setPower(resoult[1]);
+                integral_error_left1 = resoult[0];
+                error_left1 = (int)resoult[2];
+                //telemetry.addData("PIDl1", resoult[1] + "   " + error_left1 + "   " + left1.getCurrentPosition());
+                if (Math.abs(error_left1) < 5) {
+                     ready_l1 = true;
                 }
                 else {
-                     ready_l2 = false;
+                     ready_l1 = false;
                 }
                 
-                resoult = PID_control(target_r,time,integral_error_r,arm_r.getCurrentPosition(),error_r);
+
+                
+                resoult = PID_control(target_r,time,integral_error_r,arm_r.getCurrentPosition(),error_r,kp-0.02,ki,kd+0.05);
                 arm_r.setPower(resoult[1]);
                 integral_error_r = resoult[0];
                 error_r = (int)resoult[2];
@@ -235,17 +253,47 @@ public class Autonomno extends LinearOpMode {
                      ready_r = false;
                 }
                 
+                resoult = PID_control(target_a + target_a_unfold,time,integral_error_a,arm_1.getCurrentPosition(),error_a,kp_arm,ki_arm,kd_arm);
+                arm_1.setPower(resoult[1]);
+                integral_error_a = resoult[0];
+                error_a = (int)resoult[2];
+                if (Math.abs(error_a) < 6) {
+                     ready_a = true;
+                }
+                else {
+                     ready_a = false;
+                }
+                
+                resoult = PID_control(target_b + target_b_unfold,time,integral_error_b,arm_2.getCurrentPosition(),error_b,kp_arm,ki_arm,kd_arm);
+                arm_2.setPower(resoult[1]);
+                integral_error_b = resoult[0];
+                error_b = (int)resoult[2];
+                if (Math.abs(error_b) < 6) {
+                     ready_b = true;
+                }
+                else {
+                     ready_b = false;
+                }
+                
+                resoult = PID_control(target_c + target_c_unfold,time,integral_error_c,arm_3.getCurrentPosition(),error_c,kp_arm,ki_arm,kd_arm);
+                arm_3.setPower(resoult[1]);
+                integral_error_c = resoult[0];
+                error_c = (int)resoult[2];
+                if (Math.abs(error_c) < 6) {
+                     ready_c = true;
+                }
+                else {
+                     ready_c = false;
+                }
+                
                 time = runtime.milliseconds();
                 
-                 if (steps == 0 ) {
+                if      (steps == 0 ) {
                     steps = 1;
-                    
-                    servo.setPosition(0.75);
-                    arm_1.setTargetPosition(1000); //be upstraight
-                    arm_1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    arm_1.setPower(1);
+                    target_a_unfold = 1000;
+                    servo.setPosition(1);
                  }
-                else if (ready_l1 && ready_l2 && ready_r1 && ready_r2 && steps == 1) {
+                else if (steps == 1 && ready_l1 && ready_l2 && ready_r1 && ready_r2) {
                     for (int n = 0; n < 10; n++) {
                         cone_color[0] += color.red();
                         cone_color[1] += color.green();
@@ -262,72 +310,136 @@ public class Autonomno extends LinearOpMode {
                     //step2
                     distance += 85;
                     target_l1 = (int)(count_per_cm * distance);
-                    target_l2 = (int)(count_per_cm * distance);
+                    target_l2 = (int)(count_per_cm * (distance + 5));
                     target_r1 = (int)(count_per_cm * distance);
                     target_r2 = (int)(count_per_cm * distance);
                     
                 }
-                else if (steps == 2 && arm_1.isBusy() == false) {
+                else if (steps == 2 && ready_a) {
                     steps = 3;
-                    arm_1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    arm_1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    
-                    arm_1.setTargetPosition(0);
-                    arm_1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    arm_1.setPower(1);
+                   // arm_1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                 }
-                else if (steps == 3 ) {
+                else if (steps == 3) {
                     steps = 4;
-                    arm_2.setTargetPosition(-1010); //be upstraight
-                    arm_2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    arm_2.setPower(1);
-                    arm_3.setTargetPosition(1400); //be upstraight
-                    arm_3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    arm_3.setPower(1);
+                    target_b_unfold = -1010;
+                    target_c_unfold = 1400;
                 }
-                else if (steps == 4 && arm_2.isBusy() == false) {
+                else if (steps == 4 && ready_b) {
                     steps = 5;
-                    arm_2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    arm_2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    
-                    arm_2.setTargetPosition(0);
-                    arm_2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    arm_2.setPower(1);
-                 }
-                else if (steps == 5 && arm_3.isBusy() == false) {
+                }
+                else if (steps == 5 && ready_c) {
                     steps = 6;
-                    arm_3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    arm_3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    
-                    arm_3.setTargetPosition(0);
-                    arm_3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                    arm_3.setPower(1);
-                    ready_a = true;
                 }
                 else if (steps == 6) {
                     steps = 7;
-                    target_r = -225;
+                    target_r = -235;
 
                     ready_r = false;
                 }
                 else if (steps == 7 && ready_r) {
                     steps = 8;
-                    pos_x_0_target = -256;
+                    pos_x_0_target = -330;
                     pos_y_0_target = 600;
-                    angle_c = Math.PI - 0.4;
+                    angle_c = Math.PI;
                     interp_state_x = true;
                     interp_state_y = true;
                     ready_kinematics = true;
                 }
-                else if (steps == 8 && relese_q1 && relese_q2 && (runtime.seconds() - input_time) > 1.5) {
+                else if (steps == 8 && relese_q1 && relese_q2 && (runtime.seconds() - input_time) > 1) {
                     steps = 9;
                     servo.setPosition(0.25);
-                    sleep(500);
-                    servo.setPosition(0.5);
+                    input_time = runtime.seconds();
+                }
+                else if (steps == 9 && (runtime.seconds() - input_time) > 1) {
+                    steps = 10;
+                    pos_x_0_target = Math.cos(angle_a_nom) * a + Math.cos(angle_b_nom) * b + Math.cos(angle_c_nom) * c;
+                    pos_y_0_target = Math.sin(angle_a_nom) * a + Math.sin(angle_b_nom) * b + Math.sin(angle_c_nom) * c;
+                    interp_state_x = true;
+                    interp_state_y = true;
+                    relese_q1 = false;
+                    relese_q2 = false;
+                    target_l1 = (int)(count_per_cm * (distance+35));
+                    target_l2 = (int)(count_per_cm * (distance-35));
+                    target_r1 = (int)(count_per_cm * (distance-35));
+                    target_r2 = (int)(count_per_cm * (distance+35));
+                }
+                else if (steps == 10 && relese_q1 && relese_q2) {
+                    steps = 11;
+                    target_r = 380;
+                }
+                else if (steps == 11 && ready_r) {
+                    steps = 12;
+                    pos_x_0_target = -560;
+                    pos_y_0_target = 0;
+                    angle_c = Math.PI;
+                    interp_state_x = true;
+                    interp_state_y = true;
+                    relese_q1 = false;
+                    relese_q2 = false;
+                }
+                else if (steps == 12 && relese_q1 && relese_q2) {
+                    steps = 13;
+                    pos_x_0_target = -560;
+                    pos_y_0_target = -130;
+                    angle_c = Math.PI;
+                    interp_state_x = true;
+                    interp_state_y = true;
+                    relese_q1 = false;
+                    relese_q2 = false;
                     
                 }
-                else if(steps == 9) {
-                    steps = 10;
+                else if (steps == 13 && relese_q1 && relese_q2) {
+                    steps = 14;
+                    servo.setPosition(0.75);
+                    input_time = runtime.seconds();
+                }
+                else if (steps == 14 && (runtime.seconds() - input_time) > 2) {
+                    steps = 15;
+                    pos_x_0_target = -560;
+                    pos_y_0_target = 0;
+                    angle_c = Math.PI;
+                    interp_state_x = true;
+                    interp_state_y = true;
+                    relese_q1 = false;
+                    relese_q2 = false;
+                    
+                }
+                else if (steps == 15 && relese_q1 && relese_q2) {
+                    steps = 16;
+                    pos_x_0_target = Math.cos(angle_a_nom) * a + Math.cos(angle_b_nom) * b + Math.cos(angle_c_nom) * c;
+                    pos_y_0_target = Math.sin(angle_a_nom) * a + Math.sin(angle_b_nom) * b + Math.sin(angle_c_nom) * c;
+                    interp_state_x = true;
+                    interp_state_y = true;
+                    relese_q1 = false;
+                    relese_q2 = false;
+                    target_l1 = (int)(count_per_cm * (distance));
+                    target_l2 = (int)(count_per_cm * (distance));
+                    target_r1 = (int)(count_per_cm * (distance));
+                    target_r2 = (int)(count_per_cm * (distance));
+                }
+                else if (steps == 16 && relese_q1 && relese_q2) {
+                  steps = 17;
+                  target_r = -252;
+                }
+                else if (steps == 17 && ready_r) {
+                    steps = 18;
+                    pos_x_0_target = -320;
+                    pos_y_0_target = 610;
+                    angle_c = Math.PI;
+                    interp_state_x = true;
+                    interp_state_y = true;
+                    relese_q1 = false;
+                    relese_q2 = false;
+                    input_time = runtime.seconds();
+                }
+                else if (steps == 18 && relese_q1 && relese_q2 && (runtime.seconds() - input_time) > 1) {
+                    steps = 19;
+                    servo.setPosition(0.25);
+                    input_time = runtime.seconds();
+                }
+                else if (steps == 19 && (runtime.seconds() - input_time) > 1) {
+                    steps = 20;
+
                     if (cone_color[0] > cone_color[1] && cone_color[0] > cone_color[2]) {
                         //red  
                         target_l1 = (int)(count_per_cm * (distance-70));
@@ -348,20 +460,24 @@ public class Autonomno extends LinearOpMode {
                         target_r2 = (int)(count_per_cm * (distance+70));
 
                     }
+                    
                 }
-                else if (steps == 10) {
+                else if (steps == 20) {
+                    servo.setPosition(0.5);
                     pos_x_0_target = Math.cos(angle_a_nom) * a + Math.cos(angle_b_nom) * b + Math.cos(angle_c_nom) * c;
                     pos_y_0_target = Math.sin(angle_a_nom) * a + Math.sin(angle_b_nom) * b + Math.sin(angle_c_nom) * c;
+                    target_a_unfold = 0;
+                    target_b_unfold = 0;
+                    target_c_unfold = 0;
                     angle_c = Math.PI;
                     interp_state_x = true;
                     interp_state_y = true;
                     target_r = 0;
                 }
-                    
                 if (ready_kinematics) {    
                 
                 double interp_x = 4;
-                double interp_y = 4;
+                double interp_y = 5;
                 
                 
                 if (((pos_x_0 - pos_x_0_target) <= interp_x) && interp_state_x == true && ((pos_x_0 - pos_x_0_target) < 0)) {
@@ -510,6 +626,8 @@ public class Autonomno extends LinearOpMode {
                 target_c = (int)(count_per_rad * (Math.PI - angle_b + angle_c - angle_c_offset));
                 
                 
+                
+                /*
                 //set target position
                 arm_1.setTargetPosition(target_a);
                 arm_2.setTargetPosition(target_b);
@@ -526,15 +644,15 @@ public class Autonomno extends LinearOpMode {
                 arm_3.setPower(1);
                 //arm_r.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 //arm_r.setPower(1);
-                }
-           /*     telemetry.addData("Status", "Run Time: " + runtime.toString());
+                } */
+          /*    telemetry.addData("Status", "Run Time: " + runtime.toString());
                 telemetry.addData("Position:", "\n X = " + pos_x_0 + "\n Y = " + pos_y_0);
                 telemetry.addData("Forward:", "\n X = " + (Math.cos(angle_a) * a + Math.cos(angle_b) * b + Math.cos(angle_c) * c) + "\n Y = " + (Math.sin(angle_a) * a + Math.sin(angle_b) * b + Math.sin(angle_c) * c));
-                telemetry.addData("Angles", "\n Angle_c = " + Math.toDegrees(angle_c) + "\n Angle_b = " + Math.toDegrees(angle_b) + "\n Angle_a = " + Math.toDegrees(angle_a));
+              telemetry.addData("Angles", "\n Angle_c = " + Math.toDegrees(angle_c) + "\n Angle_b = " + Math.toDegrees(angle_b) + "\n Angle_a = " + Math.toDegrees(angle_a));
                 telemetry.addData("Encoder", arm_1.getCurrentPosition() + " " + arm_2.getCurrentPosition() + " " + arm_3.getCurrentPosition() + " " + arm_r.getCurrentPosition());
-                telemetry.addData("Targets", target_a + " " + target_b + " " + target_c);
+                telemetry.addData("Targets", (target_a + target_a_unfold) +  " " + (target_b + target_b_unfold) + " " + (target_c + target_c_unfold));
                 telemetry.update();
-            */        
+          */          
             
 
                 
@@ -544,11 +662,7 @@ public class Autonomno extends LinearOpMode {
         }
     }
     
-     public double[] PID_control (int target, double current_time, double integral_error,int current_count, int error_old) {
-    
-    double kp = 0.045;
-    double ki = 0.00000005;
-    double kd = 0.00016;
+     public double[] PID_control (int target, double current_time, double integral_error,int current_count, int error_old, double kp,double ki, double kd) {
     
     
     int error = target - current_count;
