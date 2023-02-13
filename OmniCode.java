@@ -130,7 +130,7 @@ public class OmniCode extends LinearOpMode {
             if (gamepad1.left_trigger > 0.5) {
             //code responsible for rotaation
 
-                double power = gamepad1.left_stick_x * 0.5;
+                double power = gamepad1.left_stick_x * 0.75;
             
                 left1.setPower(power);
                 right1.setPower(-power);
@@ -232,7 +232,7 @@ public class OmniCode extends LinearOpMode {
                 interp_state_x = true;
                 interp_state_y = true;
             }
-            if (gamepad2.dpad_down == true) {
+            if (gamepad2.dpad_up == true) {
                 target_r = 0;
                 arm_r.setTargetPosition(target_r);
                 arm_r.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -246,7 +246,7 @@ public class OmniCode extends LinearOpMode {
                 interp_state_x = true;
                 interp_state_y = true;                
             }
-            if (gamepad2.dpad_up == true) {
+            if (gamepad2.dpad_down == true) {
                 target_r = 0;
                 arm_r.setTargetPosition(target_r);
                 arm_r.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -281,8 +281,8 @@ public class OmniCode extends LinearOpMode {
         }
             //Interpolation for inverse kinematics
             
-            double interp_x = 4;
-            double interp_y = 4;
+            double interp_x = 5.5;
+            double interp_y = 5.5;
             
             
             if (((pos_x_0 - pos_x_0_target) <= interp_x) && interp_state_x == true && ((pos_x_0 - pos_x_0_target) < 0)) {

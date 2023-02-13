@@ -13,9 +13,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 
 
-@Autonomous(name="Autonomno desno-73cm", group="Robot")
+@Autonomous(name="autonomno lijevo-76cm", group="Robot")
 
-public class Autonomno extends LinearOpMode {
+public class Autonomno_lijevo extends LinearOpMode {
   
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotor left1 = null;
@@ -241,7 +241,7 @@ public class Autonomno extends LinearOpMode {
                 
 
                 
-                resoult = PID_control(target_r,time,integral_error_r,arm_r.getCurrentPosition(),error_r,kp-0.02,ki,kd+0.05);
+                resoult = PID_control(-target_r,time,integral_error_r,arm_r.getCurrentPosition(),error_r,kp-0.02,ki,kd+0.05);
                 arm_r.setPower(resoult[1]);
                 integral_error_r = resoult[0];
                 error_r = (int)resoult[2];
@@ -300,17 +300,17 @@ public class Autonomno extends LinearOpMode {
                         cone_color[2] += color.blue();
                         sleep(10);
                     }
-                    //cone_color[0] = cone_color[0] / 10;
-                    //cone_color[1] = cone_color[1] / 10;
-                    //cone_color[2] = cone_color[2] / 10;
+                    cone_color[0] = cone_color[0] / 10;
+                    cone_color[1] = cone_color[1] / 10;
+                    cone_color[2] = cone_color[2] / 10;
                     steps = 2;
                     telemetry.addData("RGB:", cone_color[0] + "," + cone_color[1] + "," + cone_color[2]);
                     telemetry.update();
                     read = true;
                     //step2
-                    distance += 82;
+                    distance += 85;
                     target_l1 = (int)(count_per_cm * distance);
-                    target_l2 = (int)(count_per_cm * (distance + 4));
+                    target_l2 = (int)(count_per_cm * (distance + 5));
                     target_r1 = (int)(count_per_cm * distance);
                     target_r2 = (int)(count_per_cm * distance);
                     
@@ -333,6 +333,8 @@ public class Autonomno extends LinearOpMode {
                 else if (steps == 6) {
                     steps = 7;
                     target_r = -235;
+
+                    ready_r = false;
                 }
                 else if (steps == 7 && ready_r) {
                     steps = 8;
@@ -356,10 +358,10 @@ public class Autonomno extends LinearOpMode {
                     interp_state_y = true;
                     relese_q1 = false;
                     relese_q2 = false;
-                    target_l1 = (int)(count_per_cm * (distance+35));
-                    target_l2 = (int)(count_per_cm * (distance-35));
-                    target_r1 = (int)(count_per_cm * (distance-35));
-                    target_r2 = (int)(count_per_cm * (distance+35));
+                    target_l1 = (int)(count_per_cm * (distance-38));
+                    target_l2 = (int)(count_per_cm * (distance+38));
+                    target_r1 = (int)(count_per_cm * (distance+38));
+                    target_r2 = (int)(count_per_cm * (distance-38));
                 }
                 else if (steps == 10 && relese_q1 && relese_q2) {
                     steps = 11;
